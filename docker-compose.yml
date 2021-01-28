@@ -1,0 +1,34 @@
+version: "3.3"
+
+services:
+
+  sql-analyzer:
+    build:  .
+    command: >
+      /bin/bash -c '
+        echo -e "\n>> Install Dependencies.\n"
+        composer install
+        echo -e "\n>> Run Unit Tests.\n"
+        composer unit
+      '
+    volumes:
+      - type: bind
+        source: ./
+        target: /usr/src/app
+
+  mysql:
+    image: mariadb:10
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=true
+      - MYSQL_DATABASE=test
+      - MYSQL_USER=test
+      - MYSQL_PASSWORD=test
+    logging:
+      driver: none
+    volumes:
+      - type: volume
+        source: mysql_data
+        target: /var/lib/mysql
+
+volumes:
+  mysql_data:
