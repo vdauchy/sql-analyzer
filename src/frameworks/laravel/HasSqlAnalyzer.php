@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace VDauchy\SqlAnalyzer\frameworks\laravel;
 
 use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\TestCase;
 use VDauchy\SqlAnalyzer\queries\Pdo;
@@ -41,16 +42,22 @@ trait HasSqlAnalyzer
     protected SqlAnalyzer $sqlAnalyzer;
 
     /**
+     * @var array
+     */
+    protected array $extraIgnore = [];
+
+    /**
      * Setup the test environment.
      *
+     * @param  array  $ignore
      * @return SqlAnalyzer
      * @throws \Exception
      */
-    protected function analyzerSetUp(): SqlAnalyzer
+    protected function analyzerSetUp(array $ignore = []): SqlAnalyzer
     {
         $this->explainedQueriesCache = [];
         $this->analyzerQueryCountReset();
-        $this->sqlAnalyzer = new SqlAnalyzer();
+        $this->sqlAnalyzer = new SqlAnalyzer($ignore);
         DB::getFacadeRoot()->listen(function (QueryExecuted $queryExecuted) {
             if (!$this->isAnalyzerExecuting) {
                 $this->isAnalyzerExecuting = true;
@@ -61,7 +68,8 @@ trait HasSqlAnalyzer
                         $queryExecuted->bindings
                     );
                     if ($this->isAnalyzerActive) {
-                        $analyzer = $this->explainedQueriesCache[$query->hash()] ??= $this->sqlAnalyzer->analyze($query);
+                        $analyzer = $this->explainedQueriesCache[$query->hash()]
+                            ??= $this->sqlAnalyzer->analyze($query, $this->extraIgnore);
                         $this->assertTrue($analyzer->isOptimized(), $analyzer->explain());
                     }
                     $this->queries[] = $query->query();
@@ -76,7 +84,7 @@ trait HasSqlAnalyzer
     /**
      *
      */
-    protected function analyzerActivate()
+    protected function analyzerActivate(): void
     {
         $this->isAnalyzerActive = true;
     }
@@ -84,7 +92,7 @@ trait HasSqlAnalyzer
     /**
      *
      */
-    protected function analyzerDeactivate()
+    protected function analyzerDeactivate(): void
     {
         $this->isAnalyzerActive = false;
     }
@@ -94,7 +102,7 @@ trait HasSqlAnalyzer
      */
     protected function analyzerQueryCount(): int
     {
-        return count($this->queries);
+        return $this->analyzerQueries()->count();
     }
 
     /**
@@ -107,7 +115,7 @@ trait HasSqlAnalyzer
 
     /**
      * @param  callable  $callable
-     * @return
+     * @return mixed
      */
     protected function analyzerJumpOver(callable $callable)
     {
@@ -118,10 +126,18 @@ trait HasSqlAnalyzer
     }
 
     /**
-     * @return array
+     * @return Collection
      */
-    protected function queries()
+    protected function analyzerQueries(): Collection
     {
-        return $this->queries;
+        return collect($this->queries);
+    }
+
+    /**
+     * @param  array  $extraIgnore
+     */
+    protected function analyzerIgnore(array $extraIgnore): void
+    {
+        $this->extraIgnore = $extraIgnore;
     }
 }

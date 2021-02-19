@@ -52,4 +52,15 @@ class SingleColumnTest extends TestCase
 
         $this->assertTrue($analysis->isOptimized(), $analysis->explain());
     }
+
+    public function testSelectExists()
+    {
+        $db = $this->sqlite();
+        $db->exec("CREATE TABLE fooTable(a TEXT)");
+        $db->exec("CREATE INDEX idx_a ON fooTable (a)");
+
+        $analysis = $this->analyse($this->query($db, "select exists(select * from fooTable where a = ?)"));
+
+        $this->assertTrue($analysis->isOptimized(), $analysis->explain());
+    }
 }

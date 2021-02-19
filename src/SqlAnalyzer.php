@@ -15,40 +15,40 @@ class SqlAnalyzer
     /**
      * @var array
      */
-    protected array $ignore = [];
+    protected array $ignore;
 
     /**
-     * @param  Query  $query
-     * @return Analyzer
-     * @throws Exception
+     * SqlAnalyzer constructor.
+     * @param  array  $ignore
      */
-    public function analyze(Query $query): Analyzer
-    {
-        return $this->buildQueryAnalyzer($query);
-    }
-
-    /**
-     * @param array $ignore
-     */
-    public function ignore(array $ignore)
+    public function __construct(array $ignore = [])
     {
         $this->ignore = $ignore;
     }
 
     /**
-     * @param Query $query
+     * @param  Query  $query
+     * @param  array  $extraIgnore
      * @return Analyzer
      * @throws Exception
      */
-    protected function buildQueryAnalyzer(Query $query): Analyzer
+    public function analyze(Query $query, array $extraIgnore = []): Analyzer
     {
         switch ($driver = $query->engine()) {
             case SQLite::DRIVER:
-                return new SQLite($query, $this->ignore);
+                return new SQLite($query, [...$this->ignore, ...$extraIgnore]);
             case MySql::DRIVER:
-                return new MySql($query, $this->ignore);
+                return new MySql($query, [...$this->ignore, ...$extraIgnore]);
             default:
                 throw new Exception("Driver:'{$driver}' not supported.");
         }
+    }
+
+    /**
+     * @param  array  $ignore
+     */
+    public function ignore(array $ignore)
+    {
+        $this->ignore = $ignore;
     }
 }

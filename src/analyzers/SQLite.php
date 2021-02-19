@@ -52,7 +52,8 @@ final class SQLite extends Base
         return
             str_starts_with($explain['detail'], 'LIST SUBQUERY') ||
             str_starts_with($explain['detail'], 'CORRELATED SCALAR SUBQUERY') ||
-            str_starts_with($explain['detail'], 'LEFT-MOST SUBQUERY');
+            str_starts_with($explain['detail'], 'LEFT-MOST SUBQUERY') ||
+            str_starts_with($explain['detail'], 'SCALAR SUBQUERY');
     }
 
     /**
@@ -95,7 +96,8 @@ final class SQLite extends Base
                 (str_contains(str_replace(' ', '', $this->query->query()), 'where0=1')) ||
                 (str_contains(str_replace(' ', '', $this->query->query()), 'where1=0'))
             ) ||
-            str_starts_with($explain['detail'], 'SCAN TABLE sqlite_sequence');
+            str_starts_with($explain['detail'], 'SCAN TABLE sqlite_sequence') ||
+            str_starts_with($explain['detail'], 'SCAN CONSTANT ROW');
     }
 
     /**
