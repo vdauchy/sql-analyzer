@@ -30,7 +30,6 @@ class SqlAnalyzer
      * @param  Query  $query
      * @param  array  $extraIgnore
      * @return Analyzer
-     * @throws Exception
      */
     public function analyze(Query $query, array $extraIgnore = []): Analyzer
     {

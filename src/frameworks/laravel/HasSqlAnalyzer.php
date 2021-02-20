@@ -48,10 +48,8 @@ trait HasSqlAnalyzer
 
     /**
      * Setup the test environment.
-     *
      * @param  array  $ignore
      * @return SqlAnalyzer
-     * @throws \Exception
      */
     protected function analyzerSetUp(array $ignore = []): SqlAnalyzer
     {
@@ -119,9 +117,13 @@ trait HasSqlAnalyzer
      */
     protected function analyzerJumpOver(callable $callable)
     {
-        $this->analyzerDeactivate();
-        $result = $callable();
-        $this->analyzerDeactivate();
+        if ($this->isAnalyzerActive) {
+            $this->analyzerDeactivate();
+            $result = $callable();
+            $this->analyzerActivate();
+        } else {
+            $result = $callable();
+        }
         return $result;
     }
 
@@ -139,5 +141,27 @@ trait HasSqlAnalyzer
     protected function analyzerIgnore(array $extraIgnore): void
     {
         $this->extraIgnore = $extraIgnore;
+    }
+
+    /**
+     * @param int $expectedCount
+     * @param callable $callable
+     * @return mixed
+     */
+    protected function assertDatabaseQueryCountEquals(int $expectedCount, callable $callable)
+    {
+        if ($this->isAnalyzerActive) {
+            $oldQueries = $this->analyzerQueries();
+            $result = $callable();
+            $newQueries = $this->analyzerQueries();
+            $this->assertEquals(
+                $expectedCount,
+                $newQueries->count() - $oldQueries->count(),
+                json_encode($newQueries->diff($oldQueries)),
+            );
+        } else {
+            $result = $callable();
+        }
+        return $result;
     }
 }
