@@ -2,7 +2,7 @@
   "name": "vdauchy/sql-analyzer",
   "license": "MIT",
   "require": {
-    "php": "^7.4",
+    "php": "^7.4|^8.0",
     "illuminate/support": "*",
     "illuminate/database": "*",
     "ext-json": "*",
