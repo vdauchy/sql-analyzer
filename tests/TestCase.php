@@ -30,17 +30,17 @@ class TestCase extends \PHPUnit\Framework\TestCase
      */
     protected function mysql(string $dbName = 'test', string $user = 'test', string $password = 'test'): PDO
     {
-        $sqlCommandGenerator = "
+        $dropTableQueryGenerator = "
             SELECT concat('DROP TABLE IF EXISTS `', table_name, '`;') as command
             FROM information_schema.tables
             WHERE table_schema = '{$dbName}';";
         return $this->retry(fn() => tap(
             new PDO("mysql:host=mysql;dbname={$dbName}", $user, $password),
-            function (PDO $connection) use ($sqlCommandGenerator) {
+            function (PDO $connection) use ($dropTableQueryGenerator) {
                 $connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                 $connection->exec('SET FOREIGN_KEY_CHECKS = 0;');
-                foreach ($connection->query($sqlCommandGenerator)->fetchAll(PDO::FETCH_COLUMN, 'command') as $command) {
-                    $connection->exec($command);
+                foreach ($connection->query($dropTableQueryGenerator)->fetchAll(PDO::FETCH_COLUMN) as $query) {
+                    $connection->exec($query);
                 };
                 $connection->exec('SET FOREIGN_KEY_CHECKS = 1;');
             }
@@ -72,7 +72,6 @@ class TestCase extends \PHPUnit\Framework\TestCase
      * @param  callable  $callable
      * @param  int  $retries
      * @return mixed
-     * @throws Exception
      */
     private function retry(callable $callable, int $retries = 10)
     {

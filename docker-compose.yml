@@ -10,6 +10,8 @@ services:
         composer install
         echo -e "\n>> Run Unit Tests.\n"
         composer unit
+        echo -e "\n>> Run Linter.\n"
+        composer lint
       '
     volumes:
       - type: bind

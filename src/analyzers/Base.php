@@ -29,6 +29,11 @@ abstract class Base implements Analyzer
     protected ?array $missingOptimizations = null;
 
     /**
+     * @var array|null
+     */
+    protected ?array $ignoredMissingOptimizations = null;
+
+    /**
      * @param array $explain
      * @return bool
      */
@@ -69,17 +74,20 @@ abstract class Base implements Analyzer
     final public function missingOptimizations(): array
     {
         if (is_null($this->missingOptimizations)) {
-            $this->missingOptimizations = [];
-            foreach ($this->explains() as $explain) {
-                if ($this->isIgnored($explain)) {
-                    continue;
-                }
-                if (! $this->checkIsOptimized($explain)) {
-                    $this->missingOptimizations[] = $explain;
-                }
-            }
+            $this->analyze();
         }
         return $this->missingOptimizations;
+    }
+
+    /**
+     * @return array
+     */
+    final public function ignoredMissingOptimizations(): array
+    {
+        if (is_null($this->ignoredMissingOptimizations)) {
+            $this->analyze();
+        }
+        return $this->ignoredMissingOptimizations;
     }
 
     /**
@@ -91,20 +99,17 @@ abstract class Base implements Analyzer
     }
 
     /**
-     * @return array
+     * @return string
      */
     final public function explain(): string
     {
-        $query = $this->query->query();
-        $time = $this->query->time() ?? '"Unknown"';
-        $explain = json_encode($this->formatExplains(), JSON_PRETTY_PRINT);
-        $missingOptimizations = json_encode($this->missingOptimizations(), JSON_PRETTY_PRINT);
         return <<<TEXT
         | MISSING OPTIMIZATION DETECTED |\n
-        QUERY: {$query}\n
-        TIME: {$time} milliseconds\n
-        EXPLAINS: {$explain}\n
-        MISSING OPTIMIZATIONS: {$missingOptimizations}\n
+        QUERY: {$this->toJson($this->query->query())}\n
+        TIME: {$this->toJson($this->query->time() ?? 'Unknown')} milliseconds\n
+        EXPLAINS: {$this->toJson($this->formatExplains())}\n
+        MISSING OPTIMIZATIONS: {$this->toJson($this->missingOptimizations())}\n
+        IGNORED MISSING OPTIMIZATIONS: {$this->toJson($this->ignoredMissingOptimizations())}\n
         TEXT;
     }
 
@@ -139,5 +144,32 @@ abstract class Base implements Analyzer
             $new[$key] = (is_object($value) || is_array($value)) ? $this->cast((array)$value) : (string)$value;
         }
         return $new;
+    }
+
+    /**
+     *
+     */
+    final protected function analyze(): void
+    {
+        $this->missingOptimizations = [];
+        $this->ignoredMissingOptimizations = [];
+        foreach ($this->explains() as $explain) {
+            if ($this->isIgnored($explain)) {
+                $this->ignoredMissingOptimizations[] = $explain;
+                continue;
+            }
+            if (! $this->checkIsOptimized($explain)) {
+                $this->missingOptimizations[] = $explain;
+            }
+        }
+    }
+
+    /**
+     * @param  array|string  $data
+     * @return string
+     */
+    final protected function toJson($data): string
+    {
+        return json_encode($data, JSON_PRETTY_PRINT);
     }
 }
