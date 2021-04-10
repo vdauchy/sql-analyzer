@@ -105,7 +105,7 @@ abstract class Base implements Analyzer
     {
         return <<<TEXT
         | MISSING OPTIMIZATION DETECTED |\n
-        QUERY: {$this->toJson($this->query->query())}\n
+        QUERY: "{$this->query->query()}"\n
         TIME: {$this->toJson($this->query->time() ?? 'Unknown')} milliseconds\n
         EXPLAINS: {$this->toJson($this->formatExplains())}\n
         MISSING OPTIMIZATIONS: {$this->toJson($this->missingOptimizations())}\n
@@ -165,7 +165,7 @@ abstract class Base implements Analyzer
     }
 
     /**
-     * @param  array|string  $data
+     * @param  mixed  $data
      * @return string
      */
     final protected function toJson($data): string
